@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Particle App</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    #app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      /* Canvas on top */
+    }
+
+    #video-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* Fill the screen */
+      transform: scaleX(-1);
+      /* Mirror effect */
+      z-index: 1;
+      /* Video behind */
+    }
+
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-family: sans-serif;
+      font-size: 1.5rem;
+      z-index: 3;
+      pointer-events: none;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-uVz-KbAg.js"></script>
+</head>
+
+<body>
+  <div id="loading">Loading AI Model...</div>
+  <video id="video-input" autoplay playsinline></video>
+  <div id="app"></div>
+</body>
+
+</html>
