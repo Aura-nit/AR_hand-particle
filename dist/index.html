@@ -5,6 +5,9 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="./vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@800&display=swap" rel="stylesheet">
   <title>Hand Particle App</title>
   <style>
     body {
@@ -48,14 +51,165 @@
       z-index: 3;
       pointer-events: none;
     }
+
+    #technique-name {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Shippori Mincho', serif;
+      font-weight: 800;
+      font-size: 5rem;
+      color: white;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+      text-shadow:
+        0 0 20px rgba(255, 255, 255, 0.8),
+        0 0 40px rgba(255, 255, 255, 0.4),
+        0 0 80px rgba(255, 255, 255, 0.2);
+      letter-spacing: 0.3em;
+      -webkit-text-stroke: 2px rgba(0, 0, 0, 0.8);
+      paint-order: stroke fill;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .domain-chars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .domain-char {
+      position: absolute;
+      font-family: 'Shippori Mincho', serif;
+      font-weight: 800;
+      font-size: 8rem;
+      color: white;
+      text-shadow:
+        0 0 20px #fff,
+        0 0 40px #fff,
+        0 0 80px #fff;
+      -webkit-text-stroke: 2px rgba(0, 0, 0, 0.8);
+      paint-order: stroke fill;
+      opacity: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50vw;
+      height: 50vh;
+    }
+
+    .domain-char:nth-child(1) {
+      top: 0;
+      left: 0;
+    }
+
+    .domain-char:nth-child(2) {
+      top: 0;
+      left: 50%;
+    }
+
+    .domain-char:nth-child(3) {
+      top: 50%;
+      left: 0;
+    }
+
+    .domain-char:nth-child(4) {
+      top: 50%;
+      left: 50%;
+    }
+
+    .domain-char.show {
+      animation: domain-char-appear 1.5s ease-out forwards;
+    }
+
+    .domain-char:nth-child(1).show {
+      animation-delay: 0s;
+    }
+
+    .domain-char:nth-child(2).show {
+      animation-delay: 0.15s;
+    }
+
+    .domain-char:nth-child(3).show {
+      animation-delay: 0.3s;
+    }
+
+    .domain-char:nth-child(4).show {
+      animation-delay: 0.45s;
+    }
+
+    @keyframes domain-char-appear {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+        filter: blur(12px);
+      }
+
+      25% {
+        opacity: 1;
+        transform: scale(1.15);
+        filter: blur(0px);
+      }
+
+      65% {
+        opacity: 1;
+        transform: scale(1.0);
+        filter: blur(0px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.4);
+        filter: blur(6px);
+      }
+    }
+
+    #technique-name.show {
+      animation: technique-appear 1.2s ease-out forwards;
+    }
+
+    @keyframes technique-appear {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+        filter: blur(10px);
+      }
+
+      20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+        filter: blur(0px);
+      }
+
+      60% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.0);
+        filter: blur(0px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+        filter: blur(4px);
+      }
+    }
   </style>
-  <script type="module" crossorigin src="./assets/index-uVz-KbAg.js"></script>
+  <script type="module" crossorigin src="./assets/index-B8s5lBgk.js"></script>
 </head>
 
 <body>
   <div id="loading">Loading AI Model...</div>
   <video id="video-input" autoplay playsinline></video>
   <div id="app"></div>
+  <div id="technique-name"></div>
 </body>
 
 </html>

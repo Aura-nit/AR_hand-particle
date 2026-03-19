@@ -121,12 +121,24 @@ export class ParticleSystem {
         const positions = positionAttribute.array as Float32Array;
         const colors = colorAttribute.array as Float32Array;
 
+        // Change blending mode dynamically to support black/dark colors
+        const material = this.particles.material as THREE.PointsMaterial;
+        const targetBlending = this.isGathering ? THREE.NormalBlending : THREE.AdditiveBlending;
+        if (material.blending !== targetBlending) {
+            material.blending = targetBlending;
+            material.needsUpdate = true;
+        }
+
         // Target Color
         const targetColor = new THREE.Color();
         let useForcedColor = false;
 
         if (isDomainExpansion) {
             targetColor.setHex(0xffffff); // White against black background
+            useForcedColor = true;
+        } else if (this.isGathering) {
+            // 真っ黒（ちょっと赤混ぜる）
+            targetColor.setHex(0x1a0303);
             useForcedColor = true;
         } else if (isDoubleOpen) {
             targetColor.setHex(0x0088ff); // Blue
@@ -150,7 +162,46 @@ export class ParticleSystem {
 
             // --- Physics ---
 
-            if (isOkSign) {
+            if (isDomainExpansion) {
+                // 無量空処: 画面中央(0,0,0)から外側へ放射
+                const dx = px;
+                const dy = py;
+                const dz = pz;
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                if (dist > 8.0 || dist < 0.01) {
+                    // 中央付近にリスポーン
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI - Math.PI / 2;
+                    const spawnR = 0.1 + Math.random() * 0.3;
+                    positions[i * 3] = Math.cos(theta) * Math.cos(phi) * spawnR;
+                    positions[i * 3 + 1] = Math.sin(phi) * spawnR;
+                    positions[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * spawnR;
+
+                    // 外向きの初速
+                    const speed = 0.15 + Math.random() * 0.15;
+                    vx = Math.cos(theta) * Math.cos(phi) * speed;
+                    vy = Math.sin(phi) * speed;
+                    vz = Math.sin(theta) * Math.cos(phi) * speed;
+                } else {
+                    // 外側へ加速
+                    const accel = 0.02;
+                    vx += (dx / dist) * accel;
+                    vy += (dy / dist) * accel;
+                    vz += (dz / dist) * accel;
+                }
+
+                // 微小ノイズ
+                vx += (Math.random() - 0.5) * 0.01;
+                vy += (Math.random() - 0.5) * 0.01;
+                vz += (Math.random() - 0.5) * 0.01;
+
+                // 軽いダンピング
+                vx *= 0.98;
+                vy *= 0.98;
+                vz *= 0.98;
+
+            } else if (isOkSign) {
                 // Purple Orb: Dense Ball (Hollow Purple)
                 const dx = this.targetPosition.x - px;
                 const dy = this.targetPosition.y - py;
@@ -266,31 +317,58 @@ export class ParticleSystem {
                 vz *= 0.90;
 
             } else if (this.isGathering) {
-                // Standard Black Hole Gather
+                // 呪力オーラ: ゆるく手に纏う
                 const dx = this.targetPosition.x - px;
                 const dy = this.targetPosition.y - py;
                 const dz = this.targetPosition.z - pz;
                 const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                const safeDist = Math.max(dist, 0.1);
+                const safeDist = Math.max(dist, 0.01);
 
-                const force = 2.0 / safeDist; // Linear falloff
+                // ゆるい引力と斥力のバランス点 (大体のオーラの広がり具合)
+                const auraRadius = 1.8;
 
-                const ax = (dx / safeDist) * force * 0.1;
-                const ay = (dy / safeDist) * force * 0.1;
-                const az = (dz / safeDist) * force * 0.1;
+                if (dist > auraRadius * 3.0) {
+                    // 遠すぎるパーティクルはランダムな位置にフワッと再配置
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI - Math.PI / 2;
+                    const r = auraRadius * (0.5 + Math.random() * 0.5);
+                    positions[i * 3] = this.targetPosition.x + Math.cos(theta) * Math.cos(phi) * r;
+                    positions[i * 3 + 1] = this.targetPosition.y + Math.sin(phi) * r;
+                    positions[i * 3 + 2] = this.targetPosition.z + Math.sin(theta) * Math.cos(phi) * r;
+                    vx = (Math.random() - 0.5) * 0.05;
+                    vy = (Math.random() - 0.5) * 0.05;
+                    vz = (Math.random() - 0.5) * 0.05;
+                } else {
+                    // ゆるい引力
+                    if (dist > auraRadius) {
+                        const pull = 0.02 * (dist - auraRadius); // 遠いほど少しだけ強く引く
+                        vx += (dx / safeDist) * pull;
+                        vy += (dy / safeDist) * pull;
+                        vz += (dz / safeDist) * pull;
+                    }
+                    // ゆるい斥力（中心に集まりすぎないように）
+                    else if (dist < auraRadius * 0.5) {
+                        const push = 0.03 * (auraRadius * 0.5 - dist);
+                        vx -= (dx / safeDist) * push;
+                        vy -= (dy / safeDist) * push;
+                        vz -= (dz / safeDist) * push;
+                    }
 
-                vx += ax;
-                vy += ay;
-                vz += az;
+                    // ゆるい対流・回転
+                    const swirl = 0.03;
+                    vx += (-dy / safeDist) * swirl;
+                    vy += (dx / safeDist) * swirl;
+                }
 
-                // Spiral
-                vx += -ay * 0.5;
-                vy += ax * 0.5;
+                // ランダムに揺らぐノイズ（モヤモヤ感）
+                vx += (Math.random() - 0.5) * 0.03;
+                vy += (Math.random() - 0.5) * 0.03;
+                vz += (Math.random() - 0.5) * 0.03;
 
-                // Damping
-                vx *= 0.85;
-                vy *= 0.85;
-                vz *= 0.85;
+                // ゆるめのダンピング
+                vx *= 0.94;
+                vy *= 0.94;
+                vz *= 0.94;
 
             } else if (isDispersing) {
                 // Standard Explosion

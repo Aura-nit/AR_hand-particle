@@ -175,12 +175,14 @@ export class HandTracker {
             }
 
             // 3. Check OK Sign (Purple)
-            // Thumb and Index touching (circle), others extended
-            const isThumbIndexTouching = dThumbIndex < 0.05;
-            // Middle/Ring/Pinky should be extended
-            const areThreeFingersExtended = dMiddle > 0.1 && dRing > 0.1 && dPinky > 0.1;
+            // Thumb and Middle touching (circle), others extended
+            // 逆手（手の甲向き）対応: 閾値を緩めに設定
+            const dThumbMiddle = Math.sqrt(distSq(thumbTip, middleTip));
+            const isThumbMiddleTouching = dThumbMiddle < 0.08;
+            // Index/Ring/Pinky should be extended (逆手では短く見えるため閾値を下げる)
+            const areThreeFingersExtended = dIndex > 0.07 && dRing > 0.07 && dPinky > 0.07;
 
-            if (isThumbIndexTouching && areThreeFingersExtended) {
+            if (isThumbMiddleTouching && areThreeFingersExtended) {
                 okSignCount++;
                 primaryHandLandmarks = landmarks;
             }
@@ -193,34 +195,18 @@ export class HandTracker {
             const areRingPinkyCurled = dRing < 0.1 && dPinky < 0.1;
             const dIndexMiddle = Math.sqrt(distSq(indexTip, middleTip));
 
-            if (isIndexMiddleExtended && areRingPinkyCurled && dIndexMiddle < 0.05) {
+            if (isIndexMiddleExtended && areRingPinkyCurled && dIndexMiddle < 0.04) {
                 domainExpansionCount++;
                 primaryHandLandmarks = landmarks;
             }
         }
 
         // --- Aggregate Logic ---
-
-        // Priority 1: Domain Expansion
-        if (domainExpansionCount > 0) {
-            this.isDomainExpansion = true;
-        }
-        // Priority 2: OK Sign (Purple)
-        else if (okSignCount > 0) {
-            this.isOkSign = true;
-        }
-        // Priority 3: Double Open (Blue) -> Now "Two Hands Detected"
-        else if (allLandmarks.length >= 2) {
-            this.isDoubleOpen = true;
-        }
-        // Priority 4: Pointing (Red)
-        else if (pointingHandsCount > 0) {
-            this.isPointing = true;
-        }
-        // Fallback: Standard Open/Closed (Gather/Disperse)
-        else {
-            this.isHandOpen = openHandsCount > 0;
-        }
+        this.isDomainExpansion = domainExpansionCount > 0;
+        this.isOkSign = okSignCount > 0;
+        this.isDoubleOpen = allLandmarks.length >= 2;
+        this.isPointing = pointingHandsCount > 0;
+        this.isHandOpen = openHandsCount > 0;
 
         // Update Position of primary hand
         if (primaryHandLandmarks) {
